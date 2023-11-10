@@ -22,6 +22,8 @@ macro_rules! println {
     }
 }
 
+
+/// Prints to the standard output with pinfo log.
 #[macro_export]
 macro_rules! pinfo {
     ($($arg:tt)*) => {
@@ -29,6 +31,7 @@ macro_rules! pinfo {
     }
 }
 
+/// Prints to the standard output with pdev log.
 #[macro_export]
 macro_rules! pdev {
     ($($arg:tt)*) => {
@@ -36,6 +39,7 @@ macro_rules! pdev {
     }
 }
 
+/// Prints to the standard output with pdebug log.
 #[macro_export]
 macro_rules! pdebug {
     ($($arg:tt)*) => {
