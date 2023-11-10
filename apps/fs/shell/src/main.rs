@@ -24,6 +24,7 @@ mod cmd;
 mod ramfs;
 
 use std::io::prelude::*;
+use std::{pinfo, pdev, pdebug};
 
 const LF: u8 = b'\n';
 const CR: u8 = b'\r';
@@ -48,6 +49,11 @@ fn main() {
 
     let mut buf = [0; MAX_CMD_LEN];
     let mut cursor = 0;
+
+    pinfo!("Test Info");
+    pdev!("Test Dev");
+    pdebug!("Test Debug");
+
     cmd::run_cmd("help".as_bytes());
     print_prompt();
 

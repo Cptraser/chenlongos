@@ -456,6 +456,7 @@ dependencies = [
  "axdriver",
  "axfs",
  "axhal",
+ "axio",
  "axlog",
  "axnet",
  "axtask",

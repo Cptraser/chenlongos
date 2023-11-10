@@ -5,6 +5,7 @@
 #     - `SMP`: Number of CPUs
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
+#     - `DEBUG:` Debuging level: 0, 1, 2, 3
 #     - `V`: Verbose level: (empty), 1, 2
 # * App options:
 #     - `A` or `APP`: Path to the application
@@ -30,6 +31,7 @@ PLATFORM ?=
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
+DEBUG ?= 3
 V ?=
 
 # App options
@@ -112,6 +114,7 @@ export AX_PLATFORM=$(PLATFORM_NAME)
 export AX_SMP=$(SMP)
 export AX_MODE=$(MODE)
 export AX_LOG=$(LOG)
+export AX_DEBUG=$(DEBUG)
 export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)

@@ -112,6 +112,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         smp = {}\n\
         build_mode = {}\n\
         log_level = {}\n\
+        debug_level = {}\n\
         ",
         option_env!("AX_ARCH").unwrap_or(""),
         option_env!("AX_PLATFORM").unwrap_or(""),
@@ -119,11 +120,16 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         option_env!("AX_SMP").unwrap_or(""),
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
+        option_env!("AX_DEBUG").unwrap_or(""),
     );
 
     axlog::init();
     axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
+    axio::set_max_level(option_env!("AX_DEBUG")
+                            .unwrap_or("3")
+                            .parse::<u8>()
+                            .expect("Wanted a number"));
     info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
 
     info!("Found physcial memory regions:");

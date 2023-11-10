@@ -1,3 +1,5 @@
+use core::fmt::Error;
+
 use crate::io::{self, prelude::*, BufReader};
 use crate::sync::{Mutex, MutexGuard};
 
@@ -168,6 +170,30 @@ pub fn __print_impl(args: core::fmt::Arguments) {
         // with kernel logs
         arceos_api::stdio::ax_console_write_fmt(args).unwrap();
     } else {
+        stdout().lock().write_fmt(args).unwrap();
+    }
+}
+
+
+#[doc(hidden)]
+pub fn __print_impl_debug(level:u8, args: core::fmt::Arguments) {
+    if cfg!(feature = "smp") {
+        // synchronize using the lock in axlog, to avoid interleaving
+        // with kernel logs
+        let result = arceos_api::stdio::ax_console_write_fmt(args);
+        if let Err(err) = result {
+            if err == Error {
+                return ;
+            } else {
+                result.unwrap();
+            }
+        }
+    } else {
+        unsafe {
+            if level > axio::get_max_level() {
+                return ;
+            }
+        }
         stdout().lock().write_fmt(args).unwrap();
     }
 }
