@@ -177,10 +177,5 @@ pub fn __print_impl(args: core::fmt::Arguments) {
 
 #[doc(hidden)]
 pub fn __print_impl_debug(level:u8, args: core::fmt::Arguments) {
-    unsafe {
-        if level > axio::get_max_level() {
-            return ;
-        }
-    }
-    stdout().lock().write_fmt(args).unwrap();
+    let res = arceos_api::stdio::ax_console_write_fmt_debug(level, args);
 }

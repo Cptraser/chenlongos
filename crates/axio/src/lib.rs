@@ -258,22 +258,3 @@ pub struct PollState {
     /// Object can be writen now.
     pub writable: bool,
 }
-
-static mut LEVEL_DEBUG: u8 = 3;
-
-/// Set the maximum debug level.
-///
-/// `level` should be one of 0, 1, 2, 3.
-pub fn set_max_level(level: u8) {
-    unsafe {
-        if level > 3 {
-            panic!("LEVEL_DEBUG INPUT WRONG RANGE!");
-        }
-        LEVEL_DEBUG = level;
-    }
-}
-
-/// Get the debug level.
-pub unsafe fn get_max_level() -> u8 {
-    LEVEL_DEBUG
-}

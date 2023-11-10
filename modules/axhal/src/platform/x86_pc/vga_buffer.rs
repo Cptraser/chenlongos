@@ -1,13 +1,22 @@
 //! VGA text mode.
 
+extern crate alloc;
+
+use alloc::vec::Vec;
+
 use lazy_init::LazyInit;
 use spinlock::SpinNoIrq;
+use core::fmt;
+use core::fmt::Error;
+use core::fmt::Write;
 
 use axlog::ColorCode as ConsoleColorCode;
 
 use crate::mem::PhysAddr;
 
 static VGA: SpinNoIrq<VgaTextMode> = SpinNoIrq::new(VgaTextMode::new());
+
+static mut LEVEL_DEBUG: u8 = 3;
 
 /// The height of the vga text buffer (normally 25 lines).
 const VGA_BUFFER_HEIGHT: usize = 25;
@@ -242,6 +251,8 @@ impl VgaTextMode {
     }
 }
 
+
+
 pub fn putchar(c: u8) {
     let mut vga = VGA.lock();
 
@@ -252,6 +263,16 @@ pub fn putchar(c: u8) {
 
 pub fn getchar() -> Option<u8> {
     None
+}
+
+impl Write for VgaTextMode {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let bytes = s.as_bytes();
+        for c in bytes {
+            putchar(*c);
+        }
+        Ok(())
+    }
 }
 
 pub(super) fn init_early() {
@@ -279,4 +300,54 @@ pub(super) fn init() {
                 .init_by(&mut *(phys_to_virt(VGA_BASE_ADDR).as_usize() as *mut VgaTextBuffer));
         }
     }
+}
+
+/// Set the maximum debug level.
+///
+/// `level` should be one of 0, 1, 2, 3.
+pub fn set_max_level(level: u8) {
+    unsafe {
+        if level > 3 {
+            panic!("LEVEL_DEBUG INPUT WRONG RANGE!");
+        }
+        LEVEL_DEBUG = level;
+    }
+}
+
+pub fn print_debug(level: u8, args: fmt::Arguments) -> fmt::Result{
+    unsafe {
+        if level > LEVEL_DEBUG {
+            return Err(Error);
+        }
+    }
+    let mut vga = VGA.lock();
+    match level {
+        1 => {
+            vga.set_color(Some(VgaTextColorCode::new(
+                VgaTextColor::LightGreen,
+                VgaTextColor::Black,
+            )));
+            vga.write_str("[INFO]  ");
+        }
+        2 => {
+            vga.set_color(Some(VgaTextColorCode::new(
+                VgaTextColor::LightBlue,
+                VgaTextColor::Black,
+            )));
+            vga.write_str("[DEV]   ");
+        }
+        3 => {
+            vga.set_color(Some(VgaTextColorCode::new(
+                VgaTextColor::Yellow,
+                VgaTextColor::Black,
+            )));
+            vga.write_str("[DEBUG] ");
+        },
+        _ => return Err(Error)
+    }
+    vga.set_color(Some(VgaTextColorCode::new(
+        VgaTextColor::White,
+        VgaTextColor::Black,
+    )));
+    vga.write_fmt(args)
 }

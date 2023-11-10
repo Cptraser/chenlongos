@@ -126,7 +126,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     axlog::init();
     axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
-    axio::set_max_level(option_env!("AX_DEBUG")
+    axhal::console::set_max_level(option_env!("AX_DEBUG")
                             .unwrap_or("3")
                             .parse::<u8>()
                             .expect("Wanted a number"));

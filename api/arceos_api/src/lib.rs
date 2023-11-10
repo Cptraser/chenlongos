@@ -76,6 +76,8 @@ pub mod stdio {
         pub fn ax_console_write_bytes(buf: &[u8]) -> crate::AxResult<usize>;
         /// Writes a formatted string to the console.
         pub fn ax_console_write_fmt(args: fmt::Arguments) -> fmt::Result;
+        /// Writes a formatted string to the console(debug).
+        pub fn ax_console_write_fmt_debug(level: u8, args: fmt::Arguments) -> fmt::Result;
     }
 }
 
