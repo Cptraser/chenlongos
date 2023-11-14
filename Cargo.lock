@@ -383,6 +383,7 @@ dependencies = [
  "memory_addr",
  "page_table",
  "page_table_entry",
+ "pc-keyboard",
  "percpu",
  "ratio",
  "raw-cpuid 11.0.1",
@@ -1353,6 +1354,12 @@ name = "paste"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
+
+[[package]]
+name = "pc-keyboard"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed089a1fbffe3337a1a345501c981f1eb1e47e69de5a40e852433e12953c3174"
 
 [[package]]
 name = "peeking_take_while"

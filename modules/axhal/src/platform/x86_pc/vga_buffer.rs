@@ -15,6 +15,7 @@ use axlog::ColorCode as ConsoleColorCode;
 use crate::mem::PhysAddr;
 
 static VGA: SpinNoIrq<VgaTextMode> = SpinNoIrq::new(VgaTextMode::new());
+static STDIN_BUFFER: SpinNoIrq<StdinBuffer> = SpinNoIrq::new(StdinBuffer::new());
 
 static mut LEVEL_DEBUG: u8 = 3;
 
@@ -24,6 +25,8 @@ const VGA_BUFFER_HEIGHT: usize = 25;
 const VGA_BUFFER_WIDTH: usize = 80;
 /// The MMIO address of VGA buffer.
 const VGA_BASE_ADDR: PhysAddr = PhysAddr::from(0xb_8000);
+/// The size of Stdin Buffer
+const STDIN_BUFFER_SIZE: usize = 1024;
 
 /// The standard color palette in VGA text mode.
 #[allow(dead_code)]
@@ -234,6 +237,12 @@ impl VgaTextMode {
                 self.current_x = 0;
                 self.current_y += 1;
             }
+            b'\x08' => {
+                // handle backspace
+                self.current_x -= 1;
+                self.buffer.chars[self.current_y][self.current_x] = 
+                    VgaTextChar(b' ' as u8, self.current_color);
+            }
             _ => {
                 self.buffer.chars[self.current_y][self.current_x] =
                     VgaTextChar(ch, self.current_color);
@@ -251,7 +260,47 @@ impl VgaTextMode {
     }
 }
 
+/// 标准输入的缓存块
+struct StdinBuffer {
+    buffer: [u8; STDIN_BUFFER_SIZE],
+    head: usize,
+    tail: usize,
+    size: usize,
+}
 
+impl StdinBuffer {
+    const fn new() -> Self {
+        Self {
+            buffer: [0; STDIN_BUFFER_SIZE],
+            head: 0,
+            tail: 0,
+            size: 0,
+        }
+    }
+
+    fn push(&mut self, data: u8) {
+        if self.size < STDIN_BUFFER_SIZE {
+            self.buffer[self.tail] = data;
+            self.tail = (self.tail + 1) % STDIN_BUFFER_SIZE;
+            self.size += 1;
+        }
+    }
+
+    fn pop(&mut self) -> Option<u8> {
+        if self.size > 0 {
+            let data = self.buffer[self.head];
+            self.head = (self.head + 1) % STDIN_BUFFER_SIZE;
+            self.size -= 1;
+            Some(data)
+        } else {
+            None
+        }
+    }
+}
+
+pub fn put2stdin(c: u8) {
+    STDIN_BUFFER.lock().push(c);
+}
 
 pub fn putchar(c: u8) {
     let mut vga = VGA.lock();
@@ -262,7 +311,7 @@ pub fn putchar(c: u8) {
 }
 
 pub fn getchar() -> Option<u8> {
-    None
+    STDIN_BUFFER.lock().pop()
 }
 
 impl Write for VgaTextMode {
@@ -327,21 +376,21 @@ pub fn print_debug(level: u8, args: fmt::Arguments) -> fmt::Result{
                 VgaTextColor::LightGreen,
                 VgaTextColor::Black,
             )));
-            vga.write_str("[INFO]  ");
+            let _ = vga.write_str("[INFO]  ");
         }
         2 => {
             vga.set_color(Some(VgaTextColorCode::new(
                 VgaTextColor::LightBlue,
                 VgaTextColor::Black,
             )));
-            vga.write_str("[DEV]   ");
+            let _ = vga.write_str("[DEV]   ");
         }
         3 => {
             vga.set_color(Some(VgaTextColorCode::new(
                 VgaTextColor::Yellow,
                 VgaTextColor::Black,
             )));
-            vga.write_str("[DEBUG] ");
+            let _ = vga.write_str("[DEBUG] ");
         },
         _ => return Err(Error)
     }

@@ -11,6 +11,18 @@ pub mod console {
     pub fn getchar() -> Option<u8> {
         unimplemented!()
     }
+
+    /// Set the maximum debug level.
+    pub fn set_max_level(level: u8){
+        unimplemented!()
+    }
+}
+
+pub mod keyboard {
+    /// Reads a byte from the keyboard, or returns [`None`] if no input is available.
+    pub fn getchar() -> Option<u8> {
+        unimplemented!()
+    }
 }
 
 pub mod misc {

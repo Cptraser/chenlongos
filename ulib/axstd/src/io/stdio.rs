@@ -1,4 +1,3 @@
-use core::fmt::Error;
 
 use crate::io::{self, prelude::*, BufReader};
 use crate::sync::{Mutex, MutexGuard};
@@ -177,5 +176,5 @@ pub fn __print_impl(args: core::fmt::Arguments) {
 
 #[doc(hidden)]
 pub fn __print_impl_debug(level:u8, args: core::fmt::Arguments) {
-    let res = arceos_api::stdio::ax_console_write_fmt_debug(level, args);
+    let _ = arceos_api::stdio::ax_console_write_fmt_debug(level, args);
 }
