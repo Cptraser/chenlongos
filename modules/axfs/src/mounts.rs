@@ -76,5 +76,30 @@ pub(crate) fn sysfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
         .lookup("devices/system/clocksource/clocksource0/current_clocksource")?;
     file_cc.write_at(0, b"tsc\n")?;
 
+    // Create /sys/html/index.html
+    sys_root.create("html", VfsNodeType::Dir)?;
+    sys_root.create("html/index", VfsNodeType::File)?;
+    let file_ih = sys_root
+        .clone()
+        .lookup("html/index")?;
+    file_ih.write_at(0, 
+r#"<html>
+    <head>
+      <title>Hello, ArceOS</title>
+    </head>
+    <body>
+      <center>
+        <h1>Hello, <a href="https://github.com/rcore-os/arceos">ArceOS</a></h1>
+      </center>
+      <center>
+        <img src="https://i.postimg.cc/5ySBJwFq/2023-11-21-204543.png" alt="ArceOS">
+      </center>
+      <hr>
+      <center>
+        <i>Powered by <a href="https://github.com/rcore-os/arceos/tree/main/apps/net/httpserver">ArceOS example HTTP server</a> v0.1.0</i>
+      </center>
+    </body>
+    </html>
+    "#.as_bytes())?;
     Ok(Arc::new(sysfs))
 }

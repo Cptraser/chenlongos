@@ -13,6 +13,8 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
+use std::string::String;
+use std::vec::Vec;
 use std::io::{self, prelude::*};
 use std::net::{TcpListener, TcpStream};
 use std::thread;
@@ -32,22 +34,6 @@ Connection: close\r\n\
     };
 }
 
-const CONTENT: &str = r#"<html>
-<head>
-  <title>Hello, ArceOS</title>
-</head>
-<body>
-  <center>
-    <h1>Hello, <a href="https://github.com/rcore-os/arceos">ArceOS</a></h1>
-  </center>
-  <hr>
-  <center>
-    <i>Powered by <a href="https://github.com/rcore-os/arceos/tree/main/apps/net/httpserver">ArceOS example HTTP server</a> v0.1.0</i>
-  </center>
-</body>
-</html>
-"#;
-
 macro_rules! info {
     ($($arg:tt)*) => {
         match option_env!("LOG") {
@@ -59,26 +45,27 @@ macro_rules! info {
     };
 }
 
-fn http_server(mut stream: TcpStream) -> io::Result<()> {
+fn http_server(mut stream: TcpStream, CONTENT: String) -> io::Result<()> {
     let mut buf = [0u8; 4096];
     let _len = stream.read(&mut buf)?;
 
-    let response = format!(header!(), CONTENT.len(), CONTENT);
+    let response = format!(header!(), CONTENT.len(), &CONTENT);
     stream.write_all(response.as_bytes())?;
 
     Ok(())
 }
 
-fn accept_loop() -> io::Result<()> {
+fn accept_loop(CONTENT: String) -> io::Result<()> {
     let listener = TcpListener::bind((LOCAL_IP, LOCAL_PORT))?;
     println!("listen on: http://{}/", listener.local_addr().unwrap());
 
     let mut i = 0;
     loop {
+        let content = CONTENT.clone();
         match listener.accept() {
             Ok((stream, addr)) => {
                 info!("new client {}: {}", i, addr);
-                thread::spawn(move || match http_server(stream) {
+                thread::spawn(move || match http_server(stream, content) {
                     Err(e) => info!("client connection error: {:?}", e),
                     Ok(()) => info!("client {} closed successfully", i),
                 });
@@ -92,5 +79,15 @@ fn accept_loop() -> io::Result<()> {
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, ArceOS HTTP server!");
-    accept_loop().expect("test HTTP server failed");
+    let fs = std::fs::File::open("/sys/html/index");
+    // info!("{}", s.clone());
+    match fs {
+        Ok(mut fs) => {
+            let mut contents:Vec<u8> = vec![0;65536];
+            let _ = fs.read_to_end(&mut contents);
+            let s: String = contents.iter().map(|&c| c as char).collect();
+            accept_loop(s.clone()).expect("test HTTP server failed");
+        }
+        Err(err) => info!("Error!{}", err),
+    }
 }
