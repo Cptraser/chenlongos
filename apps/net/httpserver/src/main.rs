@@ -34,6 +34,18 @@ Connection: close\r\n\
     };
 }
 
+macro_rules! image_header {
+    () => {
+        "\
+HTTP/1.1 200 OK\r\n\
+Content-Type: image/png\r\n\
+Content-Length: {}\r\n\
+Connection: close\r\n\
+\r\n\
+"
+    };
+}
+
 macro_rules! info {
     ($($arg:tt)*) => {
         match option_env!("LOG") {
@@ -45,27 +57,60 @@ macro_rules! info {
     };
 }
 
-fn http_server(mut stream: TcpStream, CONTENT: String) -> io::Result<()> {
+fn http_server(mut stream: TcpStream) -> io::Result<()> {
     let mut buf = [0u8; 4096];
     let _len = stream.read(&mut buf)?;
 
-    let response = format!(header!(), CONTENT.len(), &CONTENT);
-    stream.write_all(response.as_bytes())?;
+    let request_head = buf.split(|&x| x == b'\n').next().unwrap();
+    let mut iter = request_head.split(|&x| x == b' ');
+
+    let method = iter.next().unwrap();
+    let path = iter.next().unwrap();
+    let version = iter.next().unwrap();
+
+    let mut path = std::str::from_utf8(path).unwrap().trim();
+
+    if path == "/" {
+        path = "/index.html";
+    }
+
+    match path.split(".").last().unwrap() {
+        "html" => {
+            let content = std::fs::read(format!("/html{}", path).as_str()).unwrap();
+            let response = format!(
+                header!(),
+                content.len(),
+                std::str::from_utf8(&content).unwrap()
+            );
+
+            stream.write_all(response.as_bytes())?;
+        }
+        "png" | "jpg" => {
+            let content = std::fs::read(format!("/png{}", path).as_str()).unwrap();
+            let response_header = format!(
+                image_header!(),
+                content.len(),
+            );
+            stream.write_all(response_header.as_bytes())?;
+            stream.write_all(&content)?;
+        }
+        _ => {}
+    }
+    stream.flush()?;
 
     Ok(())
 }
 
-fn accept_loop(CONTENT: String) -> io::Result<()> {
+fn accept_loop() -> io::Result<()> {
     let listener = TcpListener::bind((LOCAL_IP, LOCAL_PORT))?;
     println!("listen on: http://{}/", listener.local_addr().unwrap());
 
     let mut i = 0;
     loop {
-        let content = CONTENT.clone();
         match listener.accept() {
             Ok((stream, addr)) => {
                 info!("new client {}: {}", i, addr);
-                thread::spawn(move || match http_server(stream, content) {
+                thread::spawn(move || match http_server(stream) {
                     Err(e) => info!("client connection error: {:?}", e),
                     Ok(()) => info!("client {} closed successfully", i),
                 });
@@ -79,15 +124,5 @@ fn accept_loop(CONTENT: String) -> io::Result<()> {
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, ArceOS HTTP server!");
-    let fs = std::fs::File::open("/sys/html/index");
-    // info!("{}", s.clone());
-    match fs {
-        Ok(mut fs) => {
-            let mut contents:Vec<u8> = vec![0;65536];
-            let _ = fs.read_to_end(&mut contents);
-            let s: String = contents.iter().map(|&c| c as char).collect();
-            accept_loop(s.clone()).expect("test HTTP server failed");
-        }
-        Err(err) => info!("Error!{}", err),
-    }
+    accept_loop().expect("test HTTP server failed");
 }
